@@ -39,9 +39,14 @@ class MealsNotifier extends AsyncNotifier<List<Meal>> {
   /// Saves the meal then refreshes both history and dashboard.
   Future<void> confirmMeal(AnalysisResult result) async {
     await _repo.confirmMeal(result);
-    // Refresh meal list
     state = await AsyncValue.guard(() => _repo.getMeals());
-    // Invalidate dashboard so it refetches today's totals
+    ref.invalidate(dashboardProvider);
+  }
+
+  /// Delete a meal by id and refresh the list.
+  Future<void> deleteMeal(int id) async {
+    await _repo.deleteMeal(id);
+    state = await AsyncValue.guard(() => _repo.getMeals());
     ref.invalidate(dashboardProvider);
   }
 }

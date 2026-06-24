@@ -30,4 +30,10 @@ class MealRepository {
         .map((e) => Meal.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  /// Delete a meal by id
+  Future<void> deleteMeal(int id) async {
+    await _client.delete('${ApiConstants.meals}/$id');
+  }
+
 }

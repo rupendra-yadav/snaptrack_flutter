@@ -69,6 +69,18 @@ class ApiClient {
   }
 
   // ---------------------------------------------------------------------------
+  // DELETE
+  // ---------------------------------------------------------------------------
+  Future<void> delete(String path) async {
+    final response = await _client
+        .delete(_uri(path), headers: {'Accept': 'application/json'})
+        .timeout(const Duration(seconds: 30));
+    if (response.statusCode != 204 && response.statusCode != 200) {
+      _checkStatus(response);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // GET list
   // ---------------------------------------------------------------------------
   Future<List<dynamic>> getList(String path) async {

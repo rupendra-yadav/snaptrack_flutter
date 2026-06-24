@@ -17,7 +17,10 @@ dependencies:
   http: ^1.2.1
 
   # Image picker (camera + gallery)
-  image_picker: ^1.1.2
+  image_picker: ^1.0.0
+
+  # Local storage for goals
+  shared_preferences: ^2.3.2
 
   # Icons
   cupertino_icons: ^1.0.6

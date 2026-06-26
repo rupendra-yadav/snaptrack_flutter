@@ -7,6 +7,7 @@ import '../../meals/ui/history_screen.dart';
 import '../../settings/ui/settings_screen.dart';
 import '../../settings/providers/goals_provider.dart';
 import '../../../shared/widgets/macro_card.dart';
+import '../ui/water_tracker_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -105,6 +106,10 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ),
             ),
+
+            const SizedBox(height: 12),
+            // Water tracker
+            const WaterTrackerCard(),
 
             const SizedBox(height: 24),
             Text(

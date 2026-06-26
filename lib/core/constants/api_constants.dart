@@ -1,10 +1,8 @@
 class ApiConstants {
   ApiConstants._();
 
-  // Change this to your server IP when testing on a physical device.
-  // 10.0.2.2 is the Android emulator's alias for localhost.
-  // For iOS simulator, localhost works directly.
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
+  static const String baseUrl = 'https://snaptrack-production.up.railway.app/api';
+  static const String imageBaseUrl = 'https://snaptrack-production.up.railway.app';
 
   // Endpoints
   static const String analyze = '/meals/analyze';

@@ -1,13 +1,110 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/meal_providers.dart';
+import '../domain/meal_model.dart';
 import '../../../shared/widgets/loading_overlay.dart';
 
-class AnalysisScreen extends ConsumerWidget {
+class AnalysisScreen extends ConsumerStatefulWidget {
   const AnalysisScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AnalysisScreen> createState() => _AnalysisScreenState();
+}
+
+class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
+  // Local editable copy of food items
+  List<FoodItem>? _editableFoods;
+
+  void _initEditable(List<FoodItem> foods) {
+    _editableFoods ??= List.from(foods);
+  }
+
+  double get _totalCalories =>
+      _editableFoods?.fold(0, (sum, f) => sum! + f.calories) ?? 0;
+  double get _totalProtein =>
+      _editableFoods?.fold(0, (sum, f) => sum! + f.proteinG) ?? 0;
+
+  Future<void> _editFoodItem(int index) async {
+    final food = _editableFoods![index];
+    final calController =
+        TextEditingController(text: food.calories.toInt().toString());
+    final proteinController =
+        TextEditingController(text: food.proteinG.toInt().toString());
+    final weightController = TextEditingController(
+        text: food.estimatedWeightG?.toInt().toString() ?? '');
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(food.name,
+                style: Theme.of(ctx).textTheme.titleLarge),
+            const SizedBox(height: 20),
+            TextField(
+              controller: weightController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Estimated weight',
+                suffixText: 'g',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: calController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Calories',
+                suffixText: 'kcal',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: proteinController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Protein',
+                suffixText: 'g',
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () {
+                  setState(() {
+                    _editableFoods![index] = FoodItem(
+                      name: food.name,
+                      estimatedWeightG:
+                          double.tryParse(weightController.text),
+                      calories:
+                          double.tryParse(calController.text) ?? food.calories,
+                      proteinG: double.tryParse(proteinController.text) ??
+                          food.proteinG,
+                    );
+                  });
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Save'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, ) {
     final analysisAsync = ref.watch(analysisProvider);
     final mealsState = ref.watch(mealsProvider);
     final theme = Theme.of(context);
@@ -28,6 +125,8 @@ class AnalysisScreen extends ConsumerWidget {
           );
         }
 
+        _initEditable(result.foods);
+
         return Stack(
           children: [
             Scaffold(
@@ -44,7 +143,7 @@ class AnalysisScreen extends ConsumerWidget {
               body: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // Total summary card
+                  // Totals card — updates live as user edits
                   Card(
                     color: theme.colorScheme.primaryContainer,
                     child: Padding(
@@ -54,7 +153,7 @@ class AnalysisScreen extends ConsumerWidget {
                         children: [
                           _TotalStat(
                             label: 'Total Calories',
-                            value: '${result.totalCalories.toInt()}',
+                            value: '${_totalCalories.toInt()}',
                             unit: 'kcal',
                           ),
                           Container(
@@ -65,7 +164,7 @@ class AnalysisScreen extends ConsumerWidget {
                           ),
                           _TotalStat(
                             label: 'Total Protein',
-                            value: '${result.totalProtein.toInt()}',
+                            value: '${_totalProtein.toInt()}',
                             unit: 'g',
                           ),
                         ],
@@ -74,68 +173,85 @@ class AnalysisScreen extends ConsumerWidget {
                   ),
 
                   const SizedBox(height: 16),
-                  Text(
-                    'Detected foods',
-                    style: theme.textTheme.titleMedium,
+                  Row(
+                    children: [
+                      Text('Detected foods',
+                          style: theme.textTheme.titleMedium),
+                      const Spacer(),
+                      Text(
+                        'Tap to edit',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(Icons.edit,
+                          size: 14,
+                          color: theme.colorScheme.onSurfaceVariant),
+                    ],
                   ),
                   const SizedBox(height: 8),
 
-                  // Food items list
-                  ...result.foods.map(
-                    (food) => Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: theme.colorScheme.secondaryContainer,
-                          child: Icon(
-                            Icons.restaurant,
-                            color: theme.colorScheme.secondary,
+                  // Food items — tappable for editing
+                  ...(_editableFoods ?? []).asMap().entries.map(
+                        (entry) => Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            onTap: () => _editFoodItem(entry.key),
+                            leading: CircleAvatar(
+                              backgroundColor:
+                                  theme.colorScheme.secondaryContainer,
+                              child: Icon(Icons.restaurant,
+                                  color: theme.colorScheme.secondary),
+                            ),
+                            title: Text(entry.value.name),
+                            subtitle: entry.value.estimatedWeightG != null
+                                ? Text(
+                                    '~${entry.value.estimatedWeightG!.toInt()}g')
+                                : null,
+                            trailing: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  '${entry.value.calories.toInt()} kcal',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '${entry.value.proteinG.toInt()}g protein',
+                                  style: theme.textTheme.labelSmall,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        title: Text(food.name),
-                        subtitle: food.estimatedWeightG != null
-                            ? Text('~${food.estimatedWeightG!.toInt()}g')
-                            : null,
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '${food.calories.toInt()} kcal',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              '${food.proteinG.toInt()}g protein',
-                              style: theme.textTheme.labelSmall,
-                            ),
-                          ],
-                        ),
                       ),
-                    ),
-                  ),
 
                   const SizedBox(height: 24),
 
-                  // Confirm button
                   FilledButton.icon(
                     onPressed: mealsState.isLoading
                         ? null
                         : () async {
+                            // Build updated result with edited foods
+                            final updatedResult = AnalysisResult(
+                              foods: _editableFoods!,
+                              totalCalories: _totalCalories,
+                              totalProtein: _totalProtein,
+                              imagePath: result.imagePath,
+                            );
                             await ref
                                 .read(mealsProvider.notifier)
-                                .confirmMeal(result);
+                                .confirmMeal(updatedResult);
                             if (!context.mounted) return;
                             ref.read(analysisProvider.notifier).clear();
-                            // Pop back to dashboard (pop twice: analysis + add meal)
                             Navigator.popUntil(
                                 context, (route) => route.isFirst);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Meal saved!'),
-                              ),
+                              const SnackBar(content: Text('Meal saved!')),
                             );
                           },
                     icon: const Icon(Icons.check),

@@ -35,5 +35,4 @@ class MealRepository {
   Future<void> deleteMeal(int id) async {
     await _client.delete('${ApiConstants.meals}/$id');
   }
-
 }

@@ -1,3 +1,5 @@
+import '../../../core/constants/api_constants.dart';
+
 class FoodItem {
   final int? id;
   final String name;
@@ -45,6 +47,13 @@ class Meal {
     required this.createdAt,
     required this.foodItems,
   });
+
+  /// Full URL to the meal photo served by the backend
+  String get imageUrl {
+    // imagePath is like "uploads\abc.jpg" or "uploads/abc.jpg"
+    final normalized = imagePath.replaceAll('\\', '/');
+    return '${ApiConstants.imageBaseUrl}/$normalized';
+  }
 
   factory Meal.fromJson(Map<String, dynamic> json) => Meal(
         id: json['id'] as int,
